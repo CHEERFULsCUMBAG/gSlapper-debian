@@ -1,0 +1,30 @@
+Source: gslapper
+Section: video
+Priority: optional
+Maintainer: Your Name <you@example.com>
+Build-Depends:
+ debhelper-compat (= 13),
+ meson,
+ ninja-build,
+ pkg-config,
+ wayland-protocols,
+ libunwind-dev,
+ libgstreamer1.0-dev,
+ libgstreamer-plugins-base1.0-dev
+Standards-Version: 4.6.2
+Rules-Requires-Root: no
+Homepage: https://github.com/Nomadcxx/gSlapper
+
+Package: gslapper
+Architecture: any
+Depends:
+ ${shlibs:Depends},
+ ${misc:Depends},
+ gstreamer1.0-tools,
+ gstreamer1.0-plugins-base,
+ gstreamer1.0-plugins-good,
+ gstreamer1.0-plugins-bad,
+ gstreamer1.0-plugins-ugly,
+ gstreamer1.0-libav
+Description: Wayland wallpaper player using GStreamer (gSlapper)
+ gSlapper provides video wallpapers on Wayland using GStreamer.

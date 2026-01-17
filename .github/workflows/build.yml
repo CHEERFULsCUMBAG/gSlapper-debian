@@ -1,0 +1,83 @@
+name: Build gSlapper Debian packages
+
+permissions:
+  contents: write
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 4 * * *"
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Checkout packaging repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install build dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y \
+            build-essential git pkg-config \
+            meson ninja-build wayland-protocols libunwind-dev \
+            debhelper dh-make fakeroot dpkg-dev \
+            libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev
+
+      - name: Detect latest upstream version
+        id: version
+        run: |
+          VERSION=$(scripts/update-upstream.sh)
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Build if needed
+        run: |
+          bash scripts/build.sh "${{ steps.version.outputs.version }}"
+
+      - name: Check for build artifacts
+        id: artifacts
+        run: |
+          if ls build/*.deb 1>/dev/null 2>&1; then
+            echo "found=true" >> $GITHUB_OUTPUT
+          else
+            echo "found=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Upload Debian packages
+        if: steps.artifacts.outputs.found == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: gslapper-debs
+          path: |
+            build/*.deb
+            build/*.changes
+            build/*.buildinfo
+
+      - name: Commit version bump
+        if: steps.artifacts.outputs.found == 'true'
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add .last-built-version || true
+          git commit -m "Build gSlapper ${{ steps.version.outputs.version }}" || true
+          git push || true
+
+      - name: Create GitHub Release
+        if: steps.artifacts.outputs.found == 'true'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: "v${{ steps.version.outputs.version }}"
+          name: "gSlapper ${{ steps.version.outputs.version }} (Debian)"
+          body: |
+            Automated Debian packages for gSlapper ${{ steps.version.outputs.version }}.
+
+            Built from upstream tag v${{ steps.version.outputs.version }}.
+          files: |
+            build/*.deb
+            build/*.changes
+            build/*.buildinfo
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

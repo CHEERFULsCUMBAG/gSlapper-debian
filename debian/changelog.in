@@ -1,0 +1,5 @@
+gslapper (@VERSION@-1) unstable; urgency=medium
+
+  * Automated build for upstream v@VERSION@.
+
+ -- Your Name <you@example.com>  @DATE@
